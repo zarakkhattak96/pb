@@ -27,7 +27,7 @@ async function fetchTitleUtil(
 					}
 				})
 				.on(CALLBACK_TYPE.error, (err) => {
-					console.log(err, "ERRRRRRR");
+					console.error(err, "ERRRRRRR");
 
 					callback(err, {
 						title: "NO RESPONSE",
@@ -43,4 +43,47 @@ async function fetchTitleUtil(
 	}
 }
 
-export default fetchTitleUtil;
+async function fetchTitleWithPromise(address: string) {
+	return new Promise((resolve, reject) => {
+		const client = httpClient(address);
+
+		try {
+			client.get(address, (res) => {
+				let title = "";
+				res.on("data", (chunk) => {
+					title += chunk.toString();
+				});
+
+				res.on("end", () => {
+					if (res.statusCode === 301 || res.statusCode === 302) {
+						const location = res.headers.location;
+						fetchTitleWithPromise(location as string).then((resp) => {
+							resolve(resp);
+						});
+					} else {
+						resolve({
+							title: title.split("<title>")[1].split("</title>")[0],
+							address: address,
+						});
+					}
+				});
+
+				res.on("error", (err) => {
+					resolve({
+						title: title,
+						address: address,
+					});
+				});
+			});
+		} catch (err) {
+			resolve({
+				title: "NO RESPONSE",
+				address: address,
+			});
+		}
+	});
+}
+
+const FETCH_UTILS = { fetchTitleUtil, fetchTitleWithPromise };
+
+export default FETCH_UTILS;

@@ -9,7 +9,7 @@ export const TitleController = () => {
 			service.getTitleWithCallbacks(
 				req.query.address as string,
 				(err, resp) => {
-					console.log(err);
+					console.error(err);
 					resp ? res.send(htmlTemplate(resp)) : res.send(err);
 				},
 			);

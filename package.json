@@ -3,7 +3,7 @@
 		"start:dev": "nodemon --watch src --ext ts,js src/web/server.ts"
 	},
 	"dependencies": {
-		"asyncjs": "^0.0.13",
+		"async": "^3.2.6",
 		"dotenv": "^16.4.7",
 		"env-var": "^7.5.0",
 		"express": "^4.21.2",
@@ -16,6 +16,7 @@
 	"main": "index.ts",
 	"license": "MIT",
 	"devDependencies": {
+		"@types/async": "^3.2.24",
 		"@types/express": "^5.0.0",
 		"@types/node": "^22.10.1"
 	}

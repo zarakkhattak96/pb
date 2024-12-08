@@ -18,5 +18,13 @@ export const TitleController = () => {
 				},
 			);
 		},
+
+		getTitleWithAsync: (req: Request, res: Response) => {
+			service.getTitleWithAsync(req.query.address as string, (err, resp) => {
+				console.log(err);
+				console.log(resp, "Controller");
+				resp ? res.send(htmlTemplate(resp)) : res.send(err);
+			});
+		},
 	};
 };

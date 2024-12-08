@@ -1,6 +1,6 @@
-import httpClient from "../../infra/client/httpClient";
+import fetchTitleUtil from "../../utils/fetchTitle.util";
 import { htmlTemplate } from "../../utils/htmlTemplate";
-import { type CALLBACK, CALLBACK_TYPE } from "../../utils/types";
+import type { CALLBACK } from "../../utils/types";
 import async from "async";
 
 export type RESULT = { title: string; address: string };
@@ -81,6 +81,22 @@ export const TitleService = () => {
 				},
 			);
 		},
+
+		getTitleWithPromises: (address: string | string[]) => {
+			let addresses = [];
+
+			if (typeof address === "string") {
+				addresses = [address];
+			} else {
+				addresses = address;
+			}
+
+			return new Promise((resolve, reject) => {
+				const promises = addresses.map((a) => fetchTitle(a));
+
+				resolve(Promise.all(promises));
+			});
+		},
 	};
 
 	async function fetchTitle(address: string) {
@@ -95,46 +111,5 @@ export const TitleService = () => {
 			title,
 			address,
 		};
-	}
-
-	async function fetchTitleUtil(
-		address: string,
-		callback: (error: Error | null, res?: RESULT) => void,
-	) {
-		const client = httpClient(address);
-		try {
-			client.get(address, (res) => {
-				let title = "";
-				res.on(CALLBACK_TYPE.data, (chunk) => {
-					title += chunk.toString();
-				});
-
-				res
-					.on(CALLBACK_TYPE.end, () => {
-						if (res.statusCode === 301 || res.statusCode === 302) {
-							const location = res.headers.location;
-							fetchTitleUtil(location as string, callback);
-						} else {
-							callback(null, {
-								title: title.split("<title>")[1].split("</title>")[0],
-								address: address,
-							});
-						}
-					})
-					.on(CALLBACK_TYPE.error, (err) => {
-						console.log(err, "ERRRRRRR");
-
-						callback(err, {
-							title: "NO RESPONSE",
-							address: address,
-						});
-					});
-			});
-		} catch (err) {
-			callback(err as Error, {
-				title: "NO RESPONSE",
-				address: address,
-			});
-		}
 	}
 };

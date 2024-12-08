@@ -26,5 +26,11 @@ export const TitleController = () => {
 				resp ? res.send(htmlTemplate(resp)) : res.send(err);
 			});
 		},
+
+		getTitleWithPromises: (req: Request, res: Response) => {
+			service.getTitleWithPromises(req.query.address as string).then((resp) => {
+				res.send(htmlTemplate(resp as { title: string; address: string }[]));
+			});
+		},
 	};
 };

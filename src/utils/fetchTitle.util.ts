@@ -50,11 +50,11 @@ async function fetchTitleWithPromise(address: string) {
 		try {
 			client.get(address, (res) => {
 				let title = "";
-				res.on("data", (chunk) => {
+				res.on(CALLBACK_TYPE.data, (chunk) => {
 					title += chunk.toString();
 				});
 
-				res.on("end", () => {
+				res.on(CALLBACK_TYPE.end, () => {
 					if (res.statusCode === 301 || res.statusCode === 302) {
 						const location = res.headers.location;
 						fetchTitleWithPromise(location as string).then((resp) => {
@@ -68,7 +68,7 @@ async function fetchTitleWithPromise(address: string) {
 					}
 				});
 
-				res.on("error", (err) => {
+				res.on(CALLBACK_TYPE.error, (err) => {
 					resolve({
 						title: title,
 						address: address,

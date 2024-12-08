@@ -1,14 +1,10 @@
 import type { Request, Response } from "express";
-import { TitleService } from "../../app/service/title.service";
+import { type RESULT, TitleService } from "../../app/service/title.service";
 import { htmlTemplate } from "../../utils/htmlTemplate";
 
 export const TitleController = () => {
 	const service = TitleService();
 	return {
-		getTitle: async (req: Request, res: Response) => {
-			res.send(await service.getTitle(req.query.address as string));
-		},
-
 		getTitleWithCallbacks: (req: Request, res: Response) => {
 			service.getTitleWithCallbacks(
 				req.query.address as string,
@@ -21,16 +17,16 @@ export const TitleController = () => {
 
 		getTitleWithAsync: (req: Request, res: Response) => {
 			service.getTitleWithAsync(req.query.address as string, (err, resp) => {
-				console.log(err);
-				console.log(resp, "Controller");
 				resp ? res.send(htmlTemplate(resp)) : res.send(err);
 			});
 		},
 
 		getTitleWithPromises: (req: Request, res: Response) => {
-			service.getTitleWithPromises(req.query.address as string).then((resp) => {
-				res.send(htmlTemplate(resp as { title: string; address: string }[]));
-			});
+			const resp = service.getTitleWithPromises(req.query.address as string);
+
+			resp
+				.then((resp) => res.send(htmlTemplate(resp as RESULT[])))
+				.catch((err) => res.send(err));
 		},
 	};
 };

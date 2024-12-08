@@ -1,5 +1,5 @@
+import httpClient from "../../infra/client/httpClient";
 import fetchTitleUtil from "../../utils/fetchTitle.util";
-import { htmlTemplate } from "../../utils/htmlTemplate";
 import type { CALLBACK } from "../../utils/types";
 import async from "async";
 
@@ -7,20 +7,6 @@ export type RESULT = { title: string; address: string };
 
 export const TitleService = () => {
 	return {
-		getTitle: async (address: string | string[]) => {
-			let addresses = [];
-			if (typeof address === "string") {
-				addresses = [address];
-			} else {
-				addresses = address;
-			}
-
-			const resp = await Promise.all(addresses.map((a) => fetchTitle(a)));
-			const addressesWithTitle: { title: string; address: string }[] = resp;
-
-			return htmlTemplate(addressesWithTitle);
-		},
-
 		getTitleWithCallbacks: (address: string | string[], callback: CALLBACK) => {
 			let addresses = [];
 
@@ -52,8 +38,6 @@ export const TitleService = () => {
 				addresses = address;
 			}
 
-			// console.log("Addresses to process:", addresses);
-
 			async.map(
 				addresses,
 				(address, callback) => {
@@ -70,7 +54,6 @@ export const TitleService = () => {
 					});
 				},
 				(err, result) => {
-					// console.log(err, result, "RESULTTTTT");
 					if (err) {
 						callback(err, [
 							{ address: address as string, title: "NO RESPONSE" },
@@ -92,24 +75,51 @@ export const TitleService = () => {
 			}
 
 			return new Promise((resolve, reject) => {
-				const promises = addresses.map((a) => fetchTitle(a));
+				const promises = addresses.map((a) => fetchTitleWithPromise(a));
 
 				resolve(Promise.all(promises));
 			});
 		},
 	};
 
-	async function fetchTitle(address: string) {
-		let title = "";
-		try {
-			const html = await fetch(address).then((r) => r.text());
-			title = html.split("<title>")[1].split("</title>")[0];
-		} catch (err) {
-			title = "NO RESPONSE";
-		}
-		return {
-			title,
-			address,
-		};
+	async function fetchTitleWithPromise(address: string) {
+		return new Promise((resolve, reject) => {
+			const client = httpClient(address);
+
+			try {
+				client.get(address, (res) => {
+					let title = "";
+					res.on("data", (chunk) => {
+						title += chunk.toString();
+					});
+
+					res.on("end", () => {
+						if (res.statusCode === 301 || res.statusCode === 302) {
+							const location = res.headers.location;
+							fetchTitleWithPromise(location as string).then((resp) => {
+								resolve(resp);
+							});
+						} else {
+							resolve({
+								title: title.split("<title>")[1].split("</title>")[0],
+								address: address,
+							});
+						}
+					});
+
+					res.on("error", (err) => {
+						resolve({
+							title: title,
+							address: address,
+						});
+					});
+				});
+			} catch (err) {
+				resolve({
+					title: "NO RESPONSE",
+					address: address,
+				});
+			}
+		});
 	}
 };
